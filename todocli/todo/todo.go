@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"time"
 )
 
@@ -83,9 +84,6 @@ func (t *Todos) Store(filename string) error {
 	return os.WriteFile(filename, data, 0644)
 }
 func (t *Todos) Print(filter string) {
-	priorityMap := map[int]string{
-		1: "High", 2: "Medium", 3: "Low",
-	}
 
 	for i, task := range *t {
 
@@ -95,23 +93,11 @@ func (t *Todos) Print(filter string) {
 			continue //Skip pending tasks
 		}
 
-		if filter == "pending" && task.Done{
+		if filter == "pending" && task.Done {
 			continue //Skip completed tasks
 		}
-		
 
-		status := " "
-		if task.Done {
-			status = "X"
-		}
-
-		priorityStr, exists := priorityMap[task.Priority]
-
-		if !exists {
-			priorityStr = "None"
-		}
-
-		fmt.Printf("%d. [%s] %s (Priority: %s)\n", i+1, status, task.Title, priorityStr)
+		fmt.Printf("%d. %s\n", i+1, task)
 	}
 }
 
@@ -165,4 +151,45 @@ func (t *Todos) PrintStats() {
 	fmt.Println("By Priority:")
 	fmt.Printf("  High: %d | Medium: %d | Low: %d\n", priorityCounts["High"], priorityCounts["Medium"], priorityCounts["Low"])
 
+}
+
+func (t Task) String() string {
+	status := " "
+	if t.Done {
+		status = "X"
+	}
+
+	priorityMap := map[int]string{1: "High", 2: "Medium", 3: "Low"}
+	priorityStr := priorityMap[t.Priority]
+
+	if priorityStr == "" {
+		priorityStr = "None"
+	}
+
+	dateStr := t.CreatedAt.Format("2006-01-02 15:04")
+
+	return fmt.Sprintf("[%s] %s (Priority: %s , created: %s)", status, t.Title, priorityStr, dateStr)
+
+}
+
+
+// Sort reorders the tasks in the slice
+func (t *Todos) Sort(by string) {
+	ls := *t
+
+	// sort.Slice takes the slice, and a function that returns true if item 'i' should come before item 'j'
+	sort.Slice(ls, func(i, j int) bool {
+		switch by {
+		case "priority":
+			// Lower number means higher priority (1 = High)
+			return ls[i].Priority < ls[j].Priority
+		case "date":
+			// Older tasks first
+			return ls[i].CreatedAt.Before(ls[j].CreatedAt)
+		default:
+			return false // Don't change order if criteria is unknown
+		}
+	})
+
+	*t = ls
 }

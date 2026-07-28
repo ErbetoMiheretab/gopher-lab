@@ -1,0 +1,56 @@
+pipeline {
+    agent any
+
+    // This tells Jenkins to use the Go tool you just configured
+    tools {
+        go 'go-latest'
+    }
+
+    environment {
+        // Standard Go environment variables
+        GO111MODULE = 'on'
+        CGO_ENABLED = 0
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Fetching code from GitHub...'
+                checkout scm
+            }
+        }
+        
+        stage('Format Check') {
+            steps {
+                echo 'Checking if code is formatted...'
+                // Fails the build if code isn't formatted properly using gofmt
+                sh 'test -z $(gofmt -l .)'
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running unit tests...'
+                // Runs all tests in all directories
+                sh 'go test -v ./...'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building the Go binary...'
+                // Builds the project into an executable called 'myapp'
+                sh 'go build -o todo_app .'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Go project built and tested successfully! '
+        }
+        failure {
+            echo 'Oh no! The build or tests failed. '
+        }
+    }
+}
