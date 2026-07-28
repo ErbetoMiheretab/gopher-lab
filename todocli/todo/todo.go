@@ -82,12 +82,24 @@ func (t *Todos) Store(filename string) error {
 
 	return os.WriteFile(filename, data, 0644)
 }
-func (t *Todos) Print() {
+func (t *Todos) Print(filter string) {
 	priorityMap := map[int]string{
 		1: "High", 2: "Medium", 3: "Low",
 	}
 
 	for i, task := range *t {
+
+		// Filter logic
+
+		if filter == "done" && !task.Done {
+			continue //Skip pending tasks
+		}
+
+		if filter == "pending" && task.Done{
+			continue //Skip completed tasks
+		}
+		
+
 		status := " "
 		if task.Done {
 			status = "X"
@@ -101,4 +113,56 @@ func (t *Todos) Print() {
 
 		fmt.Printf("%d. [%s] %s (Priority: %s)\n", i+1, status, task.Title, priorityStr)
 	}
+}
+
+func (t *Todos) Edit(index int, newTitle string, newPriority int) error {
+	ls := *t
+
+	if index <= 0 || index > len(ls) {
+		return errors.New("invalid task index")
+	}
+
+	// Because 'ls' is a reference to the slice, modifying an element
+	// directly updates the struct in memory.
+
+	ls[index-1].Title = newTitle
+	ls[index-1].Priority = newPriority
+
+	return nil
+
+}
+
+func (t *Todos) PrintStats() {
+	// Create maps to store our tallies
+
+	statusCounts := map[string]int{"Pending": 0, "Completed": 0}
+
+	priorityMap := map[int]string{1: "High", 2: "Medium", 3: "Low"}
+
+	priorityCounts := map[string]int{"High": 0, "Medium": 0, "Low": 0, "None": 0}
+
+	// Iterate through the slice and update the maps
+
+	for _, task := range *t {
+		if task.Done {
+			statusCounts["Completed"]++
+		} else {
+			statusCounts["Pending"]++
+		}
+
+		priorityStr, exists := priorityMap[task.Priority]
+
+		if !exists {
+			priorityStr = "None"
+		}
+		priorityCounts[priorityStr]++
+
+	}
+
+	fmt.Println("--- TODO STATISTICS ---")
+	fmt.Printf("Total Tasks: %d\n", len(*t))
+	fmt.Printf("Completed: %d | Pending: %d\n", statusCounts["Completed"], statusCounts["Pending"])
+	fmt.Println("By Priority:")
+	fmt.Printf("  High: %d | Medium: %d | Low: %d\n", priorityCounts["High"], priorityCounts["Medium"], priorityCounts["Low"])
+
 }
