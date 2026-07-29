@@ -21,23 +21,30 @@ pipeline {
         stage('Format Check') {
             steps {
                 echo 'Checking if code is formatted...'
-                sh 'test -z $(gofmt -l .)'
+                // Target the subdirectory where the Go code lives
+                dir('todocli') {
+                    sh 'test -z $(gofmt -l .)'
+                }
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running unit tests...'
-                // Removed dir('todocli') wrapper
-                sh 'go test -v ./...'
+                // Enter the directory containing the main module
+                dir('todocli') {
+                    sh 'go test -v ./...'
+                }
             }
         }
         
         stage('Build') {
             steps {
                 echo 'Building the application...'
-                // Removed dir('todocli') wrapper
-                sh 'go build -o todo_app'
+                // Enter the directory containing the main module
+                dir('todocli') {
+                    sh 'go build -o todo_app'
+                }
             }
         }
     }
