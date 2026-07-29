@@ -1,13 +1,11 @@
 pipeline {
     agent any
 
-    // This tells Jenkins to use the Go tool you just configured
     tools {
         go 'go-latest'
     }
 
     environment {
-        // Standard Go environment variables
         GO111MODULE = 'on'
         CGO_ENABLED = 0
     }
@@ -23,38 +21,33 @@ pipeline {
         stage('Format Check') {
             steps {
                 echo 'Checking if code is formatted...'
-                // Fails the build if code isn't formatted properly using gofmt
                 sh 'test -z $(gofmt -l .)'
             }
         }
 
         stage('Test') {
             steps {
-                // This tells Jenkins to change into the todocli folder
-                dir('todocli') { 
-                    echo 'Running unit tests...'
-                    sh 'go test -v ./...'
-                }
+                echo 'Running unit tests...'
+                // Removed dir('todocli') wrapper
+                sh 'go test -v ./...'
             }
         }
         
         stage('Build') {
             steps {
-                // This tells Jenkins to change into the todocli folder
-                dir('todocli') {
-                    echo 'Building the application...'
-                    sh 'go build -o todo_app'
-                }
+                echo 'Building the application...'
+                // Removed dir('todocli') wrapper
+                sh 'go build -o todo_app'
             }
         }
     }
 
     post {
         success {
-            echo 'Go project built and tested successfully! '
+            echo 'Go project built and tested successfully!'
         }
         failure {
-            echo 'Oh no! The build or tests failed. '
+            echo 'Oh no! The build or tests failed.'
         }
     }
 }
