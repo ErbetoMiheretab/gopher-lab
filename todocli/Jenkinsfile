@@ -30,17 +30,21 @@ pipeline {
 
         stage('Test') {
             steps {
-                echo 'Running unit tests...'
-                // Runs all tests in all directories
-                sh 'cd todocli && go test -v ./...'
+                // This tells Jenkins to change into the todocli folder
+                dir('todocli') { 
+                    echo 'Running unit tests...'
+                    sh 'go test -v ./...'
+                }
             }
         }
-
+        
         stage('Build') {
             steps {
-                echo 'Building the Go binary...'
-                // Builds the project into an executable called 'myapp'
-                sh 'cd todocli && go build -o todo_app'
+                // This tells Jenkins to change into the todocli folder
+                dir('todocli') {
+                    echo 'Building the application...'
+                    sh 'go build -o todo_app'
+                }
             }
         }
     }
