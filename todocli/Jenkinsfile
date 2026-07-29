@@ -51,10 +51,14 @@ pipeline {
 
     post {
         success {
-            echo 'Go project built and tested successfully!'
+            echo 'Go project built successfully! Saving the binary...'
+            // Go back into your folder to grab the built file
+            dir('todocli') {
+                archiveArtifacts artifacts: 'todo_app', onlyIfSuccessful: true
+            }
         }
         failure {
-            echo 'Oh no! The build or tests failed.'
+            echo 'The build or tests failed. '
         }
     }
 }
