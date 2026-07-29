@@ -3,7 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"sync"
 	"todocli/todo"
 )
 
@@ -23,6 +25,8 @@ func main() {
 	title := flag.String("title", "", "New title for the edited task")
 	filter := flag.String("filter", "all", "Filter tasks for listing (all, pending, done)")
 	stats := flag.Bool("stats", false, "Show statistics about the tasks")
+
+	sortBy := flag.String("sort", "", "Sort tasks by 'priority' or 'date'")
 
 	// Parse the flags
 	flag.Parse()
@@ -50,9 +54,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		err := todos.Edit(*edit, *title, *priority)
-
-		if err != nil {
+		if err := todos.Edit(*edit, *title, *priority); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
@@ -77,6 +79,10 @@ func main() {
 		saveAndExit(todos, "Task removed successfully!")
 
 	case *list:
+		// Sort the list before printing if the flag was provided
+		if *sortBy != "" {
+			todos.Sort(*sortBy)
+		}
 		todos.Print(*filter)
 
 	case *stats:
@@ -89,13 +95,59 @@ func main() {
 	}
 }
 
-// Helper function to avoid repeating the save logic and error handling
+// saveAndExit saves the file, triggers a background backup, and exits
 func saveAndExit(todos *todo.Todos, successMessage string) {
-	err := todos.Store(todoFile)
-	if err != nil {
+
+	if err := todos.Store(todoFile); err != nil {
 		fmt.Fprintln(os.Stderr, "Error saving file:", err)
 		os.Exit(1)
 	}
 	fmt.Println(successMessage)
+
+	// Concurrency
+	// A WaitGroup is like a counter. We add 1 to tell Go we have 1 background task running.
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// The 'go' keyword spins this anonymous function off into a background thread.
+	go func() {
+		defer wg.Done() // When this function finishes, decrement the WaitGroup counter
+		createBackup(todoFile)
+
+	}()
+
+	// Wait for the background task to finish before we let the program exit.
+	// (If we didn't wait, the program would exit instantly and kill the backup process halfway through).
+	wg.Wait()
+
 	os.Exit(0)
+}
+
+// createBackup copies the JSON file to a backup file
+func createBackup(originalFile string) {
+	//OPen original file
+
+	source, err := os.Open(originalFile)
+
+	if err != nil {
+		return
+	}
+
+	defer source.Close()
+
+	// DEFER: This tells Go "Close this file right before createBackup() finishes".
+	// It guarantees the file is closed, even if an error crashes the function earlier.
+	// This replaces Python's `with open(..) as source:`
+
+	// Create backup file
+	destination, err := os.Create(originalFile + ".bak")
+	if err != nil {
+		return
+	}
+
+	defer destination.Close()
+
+	// Copy data from source to destination
+	io.Copy(destination, source)
+
 }

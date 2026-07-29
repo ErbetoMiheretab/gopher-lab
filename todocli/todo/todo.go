@@ -172,7 +172,6 @@ func (t Task) String() string {
 
 }
 
-
 // Sort reorders the tasks in the slice
 func (t *Todos) Sort(by string) {
 	ls := *t
