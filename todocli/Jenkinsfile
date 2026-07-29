@@ -32,7 +32,7 @@ pipeline {
             steps {
                 echo 'Running unit tests...'
                 // Runs all tests in all directories
-                sh 'go test -v ./...'
+                sh 'cd todocli && go test -v ./...'
             }
         }
 
@@ -40,7 +40,7 @@ pipeline {
             steps {
                 echo 'Building the Go binary...'
                 // Builds the project into an executable called 'myapp'
-                sh 'go build -o todo_app .'
+                sh 'cd todocli && go build -o todo_app'
             }
         }
     }
